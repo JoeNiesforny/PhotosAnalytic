@@ -11,19 +11,18 @@ namespace PhotosAnalytic
 {
     public class AnalyzePhotos
     {
-        DataTable dtbase;
+        DataTable _dtbase;
 
         public AnalyzePhotos(string[] files)
         {
-            dtbase = new DataTable();
             foreach (var file in files)
                 Analyze(file);
         }
 
         void Analyze(string file)
         {
+            List<Entry> entries = new List<Entry>();
             var header = new Header();
-            var entries = new List<Entry>();
             using(var stream = new FileStream(file, FileMode.Open))
             {
                 var offset = 0;
@@ -35,52 +34,61 @@ namespace PhotosAnalytic
                 if (CompareArray.ByteArray(buffer, Marker.APP1Marker))
                 {
                     offset += stream.Read(buffer, 0, 2);
-                    header.Size = Converter.ByteToInt(buffer, false);
+                    header.Size = Converter.ByteToInt(buffer);
                     buffer = new byte[6];
                     offset += stream.Read(buffer, 0, Marker.ExifHeader.Length);
                     if (!CompareArray.ByteArray(buffer, Marker.ExifHeader))
                         throw new FileFormatException("No ExifHeader!");
                     // Looking for IFD0
-                    header.BeginningOffset = offset;
+                    header.BeginningOffset = (uint)offset;
                     buffer = new byte[2];
                     offset += stream.Read(buffer, 0, Marker.IntelFormat.Length);
                     if (CompareArray.ByteArray(buffer, Marker.IntelFormat))
-                        header.Format = true;
+                        header.Type = new Intel();
                     else
-                        header.Format = false;
+                        header.Type = new Motorola();
+
                     offset += stream.Read(buffer, 0, 2); // offset is 4 bytes
-                    if (!CompareArray.ByteArray(buffer, Marker.MarkTag, header.Format))
+                    header.Type.Format(ref buffer);
+                    if (!CompareArray.ByteArray(buffer, Marker.MarkTag))
                         throw new FileFormatException("Problem with format. Missing 0x002a!");
                     // Get IFD0 Offset
                     buffer = new byte[4];
                     offset += stream.Read(buffer, 0, 4); // offset is 4 bytes
-                    header.IFD0Offset = Converter.ByteToInt(buffer, header.Format);
+                    header.Type.Format(ref buffer);
+                    header.IFD0Offset = Converter.ByteToInt(buffer);
                     // Go to IFD0
                     stream.Seek(header.IFD0Offset + header.BeginningOffset, SeekOrigin.Begin);
                     // Get number of IFD0 entries
                     buffer = new byte[2];
                     offset += stream.Read(buffer, 0, 2);
-                    header.IFD0EntriesNumber = Converter.ByteToInt(buffer, header.Format);
+                    header.Type.Format(ref buffer);
+                    header.IFD0EntriesNumber = Converter.ByteToInt(buffer);
                     // Get Entries of IFD0
                     for (int i = 0; i < header.IFD0EntriesNumber; i++)
                     {
                         var newEntry = new Entry();
                         buffer = new byte[2];
                         offset += stream.Read(buffer, 0, 2);
-                        buffer.CopyTo(newEntry.Tag, 0);
+                        header.Type.Format(ref buffer);
+                        newEntry.Tag = (ushort)Converter.ByteToInt(buffer);
                         offset += stream.Read(buffer, 0, 2);
-                        newEntry.Format = Converter.ByteToInt(buffer, header.Format);
+                        header.Type.Format(ref buffer);
+                        newEntry.Format = Converter.ByteToInt(buffer);
                         buffer = new byte[4];
                         offset += stream.Read(buffer, 0, 4);
-                        newEntry.NumberOfComponents = Converter.ByteToInt(buffer, header.Format);
+                        header.Type.Format(ref buffer);
+                        newEntry.NumberOfComponents = Converter.ByteToInt(buffer);
                         offset += stream.Read(buffer, 0, 4);
-                        buffer.CopyTo(newEntry.Value, 0);
+                        header.Type.Format(ref buffer);
+                        newEntry.Value = Converter.ByteToInt(buffer);
                         entries.Add(newEntry);
                     }
                     buffer = new byte[4];
                     offset += stream.Read(buffer, 0, 4);
+                    header.Type.Format(ref buffer);
                     // Get offset of IFD1
-                    header.IFD1Offset = Converter.ByteToInt(buffer, header.Format);
+                    header.IFD1Offset = Converter.ByteToInt(buffer);
                     // (optional IFD1)
                     //// Go to IFD1
                     //stream.Seek(header.IFD1Offset + header.BeginningOffset, SeekOrigin.Begin);
@@ -89,70 +97,109 @@ namespace PhotosAnalytic
                     //offset += stream.Read(buffer, 0, 2);
                     //header.IFD1EntriesNumber = Converter.ByteToInt(buffer, header.Format);
                     //// Get Entries of IFD1
-                    //for (int i = 0; i < header.IFD1EntriesNumber; i++)
-                    //{
-                    //    var newEntry = new Entry();
-                    //    buffer = new byte[2];
-                    //    offset += stream.Read(buffer, 0, 2);
-                    //    buffer.CopyTo(newEntry.Tag, 0);
-                    //    offset += stream.Read(buffer, 0, 2);
-                    //    newEntry.Format = Converter.ByteToInt(buffer, header.Format);
-                    //    buffer = new byte[4];
-                    //    offset += stream.Read(buffer, 0, 4);
-                    //    newEntry.NumberOfComponents = Converter.ByteToInt(buffer, header.Format);
-                    //    offset += stream.Read(buffer, 0, 4);
-                    //    buffer.CopyTo(newEntry.Value, 0);
-                    //    entries.Add(newEntry);
-                    //}
-                    header.ExifSubIFDOffset = FindExifOffset(entries, header.Format);
-                    if (header.ExifSubIFDOffset < 0)
+                    header.ExifSubIFDOffset = FindExifOffset(entries);
+                    if (header.ExifSubIFDOffset == uint.MaxValue)
                         throw new FileFormatException("Photo doesn't contain exif header.");
                     // Go to Exif SubIFD
                     stream.Seek(header.ExifSubIFDOffset + header.BeginningOffset, SeekOrigin.Begin);
                     // Exif SubIFD Entries
                     buffer = new byte[2];
                     offset += stream.Read(buffer, 0, 2);
-                    header.ExifSubIFDEntriesNumber = Converter.ByteToInt(buffer, header.Format);
+                    header.Type.Format(ref buffer);
+                    header.ExifSubIFDEntriesNumber = Converter.ByteToInt(buffer);
                     // Get Entries of Exif SubIFD
                     for (int i = 0; i < header.ExifSubIFDEntriesNumber; i++)
                     {
                         var newEntry = new Entry();
                         buffer = new byte[2];
                         offset += stream.Read(buffer, 0, 2);
-                        buffer.CopyTo(newEntry.Tag, 0);
+                        header.Type.Format(ref buffer);
+                        newEntry.Tag = (ushort)Converter.ByteToInt(buffer);
                         offset += stream.Read(buffer, 0, 2);
-                        newEntry.Format = Converter.ByteToInt(buffer, header.Format);
+                        header.Type.Format(ref buffer);
+                        newEntry.Format = Converter.ByteToInt(buffer);
                         buffer = new byte[4];
                         offset += stream.Read(buffer, 0, 4);
-                        newEntry.NumberOfComponents = Converter.ByteToInt(buffer, header.Format);
+                        header.Type.Format(ref buffer);
+                        newEntry.NumberOfComponents = Converter.ByteToInt(buffer);
                         offset += stream.Read(buffer, 0, 4);
-                        buffer.CopyTo(newEntry.Value, 0);
+                        header.Type.Format(ref buffer);
+                        newEntry.Value = Converter.ByteToInt(buffer);
                         entries.Add(newEntry);
                     }
                 }
             }
-            dtbase.Columns.Add("tag");
-            dtbase.Columns.Add("value");
-            foreach (var entry in entries)
-            {
-                var newRow = dtbase.NewRow();
-                newRow["tag"] = entry.Tag[0].ToString("x") + entry.Tag[1].ToString("x");
-                newRow["value"] = entry.Value[0].ToString("x") + entry.Value[1].ToString("x") + entry.Value[2].ToString("x") + entry.Value[3].ToString("x");
-                dtbase.Rows.Add(newRow);
-            }
+            ComputeToHumanReadableFormat(entries);
         }
 
-        int FindExifOffset(IEnumerable<Entry> entries, bool format = true)
+        uint FindExifOffset(IEnumerable<Entry> entries)
         {
             foreach (var entry in entries)
-                if (CompareArray.ByteArray(Component.Tag.ExifOffset, entry.Tag, format))
-                    return Converter.ByteToInt(entry.Value, format);
-            return -1;
+                if (Components.Tag.ExifOffset == entry.Tag)
+                    return (uint)entry.Value;
+            return uint.MaxValue;
         }
 
         public DataView Result()
         {
-            return dtbase.DefaultView;
+            return _dtbase.DefaultView;
+        }
+
+        // Some value of entries contains offset to real value of entry.
+        object CheckValues(List<Entry> entries)
+        {
+            throw new NotImplementedException();
+        }
+
+        void ComputeToHumanReadableFormat(List<Entry> entries)
+        {
+            _dtbase = new DataTable();
+            _dtbase.Columns.Add("tag");
+            _dtbase.Columns.Add("value");
+            foreach (var entry in entries)
+            {
+                try
+                {
+                    var newRow = _dtbase.NewRow();
+                    newRow["tag"] = Components.UserTag[entry.Tag];
+                    switch ((Components.Format)entry.Format)
+                    {
+                        case Components.Format.unsignedByte:
+                        case Components.Format.unsignedShort:
+                        case Components.Format.unsignedLong:
+                            newRow["value"] = ((uint)(entry.Value)).ToString();
+                            break;
+
+                        case Components.Format.signedByte:
+                        case Components.Format.signedShort:
+                        case Components.Format.signedLong:
+                            newRow["value"] = ((int)(entry.Value)).ToString();
+                            break;
+
+                        case Components.Format.singleFloat:
+                            newRow["value"] = BitConverter.ToSingle(BitConverter.GetBytes((uint)entry.Value), 0).ToString();
+                            break;
+
+                        case Components.Format.doubleFloat:
+                        case Components.Format.signedRational:
+                        case Components.Format.unsignedRational:
+                            newRow["value"] = BitConverter.ToDouble(BitConverter.GetBytes((ulong)entry.Value), 0).ToString();
+                            break;
+
+                        case Components.Format.asciiString:
+                            newRow["value"] = entry.Value;
+                            break;
+
+                        default:
+                            throw new Exception("Format is not supported!");
+                    }
+                    _dtbase.Rows.Add(newRow);
+                }
+                catch (Exception)
+                {
+                    ;// Avoid tags that are unknown.
+                }
+            }
         }
     }
 }

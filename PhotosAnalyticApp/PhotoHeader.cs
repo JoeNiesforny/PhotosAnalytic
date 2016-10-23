@@ -8,21 +8,32 @@ namespace PhotosAnalytic
 {
     public class Entry
     {
-        public byte[] Tag = new byte[2];
-        public int Format;
-        public int NumberOfComponents;
-        public byte[] Value = new byte[4];
+        public ushort Tag;
+        public uint Format;
+        public uint NumberOfComponents; // if number of components is bigger than 4 bytes 
+                                        // than value is an offset to real value.
+        public uint Offset;
+        public object Value;
     }
 
-    public static class Component
+    public static class Components
     {
         public static class Tag
         {
-            public static byte[] FocalLength = { 0x92, 0x0a };
-            public static byte[] ExifOffset = { 0x87, 0x69 };
+            public static ushort ExifOffset = 0x8769;
         }
 
-        enum Format : int
+        public static Dictionary<ushort, string> UserTag = new Dictionary<ushort, string>()
+        {
+            { 0x829a, "Exposure Time" },
+            { 0x829d,"FNumber" },
+            { 0x8822,"Exposure Program"},
+            { 0x920a, "Focal Length" },
+            { 0x9208, "Light Source"},
+            { 0x9209, "Flash" }
+        };
+
+        public enum Format : uint
         {
             unsignedByte = 1,
             asciiString,
@@ -41,15 +52,15 @@ namespace PhotosAnalytic
 
     public struct Header
     {
-        public int Size;
-        public int BeginningOffset;
-        public int IFD0Offset;
-        public int IFD0EntriesNumber;
-        public int IFD1Offset;
-        public int IFD1EntriesNumber;
-        public int ExifSubIFDOffset;
-        public int ExifSubIFDEntriesNumber;
-        public bool Format; // if false then motorola format. If true than intel.
+        public uint Size;
+        public uint BeginningOffset;
+        public uint IFD0Offset;
+        public uint IFD0EntriesNumber;
+        public uint IFD1Offset;
+        public uint IFD1EntriesNumber;
+        public uint ExifSubIFDOffset;
+        public uint ExifSubIFDEntriesNumber;
+        public Format Type; // Format type => intel or motorola.
     }
 
     public static class Marker
