@@ -1,42 +1,25 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PhotosAnalytic
 {
     public static class CompareArray
     {
-        public static bool ByteArray(byte[] a1, byte[] a2)//, bool format = false)
+        public static bool ByteArray(byte[] a1, byte[] a2)
         {
             if (a1.Length != a2.Length)
                 return false;
-            //if (format)
-            //{
-            //    for (int i = 0; i < a1.Length; i++)
-            //        if (a1[i] != a2[a1.Length - i - 1])
-            //            return false;
-            //}
-            //else
-            //{
-                for (int i = 0; i < a1.Length; i++)
-                    if (a1[i] != a2[i])
-                        return false;
-            //}
+            for (int i = 0; i < a1.Length; i++)
+                if (a1[i] != a2[i])
+                    return false;
             return true;
         }
     }
 
     public static class Converter
     {
-        public static uint ByteToInt(byte[] bytes)//, bool intelFormat = false)
+        public static uint ByteToInt(byte[] bytes)
         {
             uint value = 0;
-            //if (intelFormat)
-            //    for (int i = 0; i < bytes.Length; i++)
-            //        value += bytes[i] * (uint)Math.Pow(2, 8 * i);
-            //else
                 for (int i = 0; i < bytes.Length; i++)
                     value += bytes[i] * (uint)Math.Pow(2, 8 * (bytes.Length - i - 1));
             return value;

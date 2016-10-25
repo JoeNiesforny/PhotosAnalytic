@@ -13,7 +13,9 @@ namespace PhotosAnalytic
         public uint NumberOfComponents; // if number of components is bigger than 4 bytes 
                                         // than value is an offset to real value.
         public uint Offset;
-        public object Value;
+        public uint Value;
+        public double dValue;
+        public string sValue;
     }
 
     public static class Components
@@ -26,11 +28,14 @@ namespace PhotosAnalytic
         public static Dictionary<ushort, string> UserTag = new Dictionary<ushort, string>()
         {
             { 0x829a, "Exposure Time" },
-            { 0x829d,"FNumber" },
-            { 0x8822,"Exposure Program"},
-            { 0x920a, "Focal Length" },
+            { 0x829d, "FNumber" },
+            { 0x8822, "Exposure Program"},
+            { 0x8827, "ISOSpeedRatings" },
+            { 0x9000, "ExifVersion" },
+            { 0x9207, "MeteringMode"},
             { 0x9208, "Light Source"},
-            { 0x9209, "Flash" }
+            { 0x9209, "Flash" },
+            { 0x920a, "Focal Length" },
         };
 
         public enum Format : uint
