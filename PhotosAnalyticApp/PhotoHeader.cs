@@ -27,12 +27,15 @@ namespace PhotosAnalytic
 
         public static Dictionary<ushort, string> UserTag = new Dictionary<ushort, string>()
         {
+            { 0x010f, "Make" },
+            { 0x0110, "Model" },
+            { 0x9204, "Exposure Bias Value" },
             { 0x829a, "Exposure Time" },
             { 0x829d, "FNumber" },
             { 0x8822, "Exposure Program"},
-            { 0x8827, "ISOSpeedRatings" },
-            { 0x9000, "ExifVersion" },
-            { 0x9207, "MeteringMode"},
+            { 0x8827, "ISO Speed Ratings" },
+            { 0x9000, "Exif Version" },
+            { 0x9207, "Metering Mode"},
             { 0x9208, "Light Source"},
             { 0x9209, "Flash" },
             { 0x920a, "Focal Length" },

@@ -138,22 +138,21 @@ namespace PhotosAnalytic
                     case Components.Format.signedRational:
                     case Components.Format.unsignedRational:
                         {
-                            stream.Seek((uint)entry.Value + header.BeginningOffset, SeekOrigin.Begin);
+                            stream.Seek(entry.Value + header.BeginningOffset, SeekOrigin.Begin);
                             var bytes = new byte[entry.NumberOfComponents * 8];
                             stream.Read(bytes, 0, (int)entry.NumberOfComponents * 8);
-                            header.Type.Format(ref bytes);
-                            entry.dValue = BitConverter.ToDouble(bytes, 0);
+                            entry.dValue = (double)BitConverter.ToInt32(bytes, 0) /
+                                           (double)BitConverter.ToInt32(bytes, 4);
                         }
                         break;
 
                     case Components.Format.asciiString:
                         if (entry.NumberOfComponents > 4)
                         {
-                            stream.Seek((uint)entry.Value + header.BeginningOffset, SeekOrigin.Begin);
+                            stream.Seek(entry.Value + header.BeginningOffset, SeekOrigin.Begin);
                             var bytes = new byte[entry.NumberOfComponents];
                             stream.Read(bytes, 0, (int)entry.NumberOfComponents);
-                            header.Type.Format(ref bytes);
-                            entry.sValue = BitConverter.ToString(bytes);
+                            entry.sValue = System.Text.Encoding.ASCII.GetString(bytes);
                         }
                         break;
 
@@ -179,17 +178,17 @@ namespace PhotosAnalytic
                         case Components.Format.unsignedByte:
                         case Components.Format.unsignedShort:
                         case Components.Format.unsignedLong:
-                            newRow["value"] = ((uint)(entry.Value)).ToString();
+                            newRow["value"] = entry.Value.ToString();
                             break;
 
                         case Components.Format.signedByte:
                         case Components.Format.signedShort:
                         case Components.Format.signedLong:
-                            newRow["value"] = ((int)(entry.Value)).ToString();
+                            newRow["value"] = ((int)entry.Value).ToString();
                             break;
 
                         case Components.Format.singleFloat:
-                            newRow["value"] = BitConverter.ToSingle(BitConverter.GetBytes((uint)entry.Value), 0).ToString();
+                            newRow["value"] = BitConverter.ToSingle(BitConverter.GetBytes(entry.Value), 0).ToString();
                             break;
 
                         case Components.Format.doubleFloat:
