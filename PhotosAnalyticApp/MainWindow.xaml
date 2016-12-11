@@ -5,10 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PhotosAnalytic"
         mc:Ignorable="d"
-        Title="MainWindow" Height="374.468" Width="539.894">
+        Title="MainWindow" Height="486.424" Width="765.153">
     <Grid>
-        <Grid HorizontalAlignment="Left" Height="279" Margin="10,10,0,0" VerticalAlignment="Top" Width="478">
-            <DataGrid x:Name="onePictureExifValuesGrid" HorizontalAlignment="Left" Margin="10,6,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.5,0.5" Height="257" Width="451">
+        <Grid HorizontalAlignment="Left" Height="373" Margin="10,10,0,0" VerticalAlignment="Top" Width="698">
+            <DataGrid x:Name="onePictureExifValuesGrid" HorizontalAlignment="Left" Margin="10,6,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.5,0.5" Height="349" Width="648">
                 <DataGrid.RenderTransform>
                     <TransformGroup>
                         <ScaleTransform/>
@@ -19,6 +19,6 @@
                 </DataGrid.RenderTransform>
             </DataGrid>
         </Grid>
-        <Button x:Name="loadImageButton" Content="Load Image" HorizontalAlignment="Left" Margin="28,294,0,0" VerticalAlignment="Top" Width="75" Click="loadImageButton_Click"/>
+        <Button x:Name="loadImageButton" Content="Load Image" HorizontalAlignment="Left" Margin="36,389,0,0" VerticalAlignment="Top" Width="109" Click="loadImageButton_Click" Height="30"/>
     </Grid>
 </Window>

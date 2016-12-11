@@ -15,6 +15,11 @@ namespace PhotosAnalytic
 
         public AnalyzePhotos(string[] files)
         {
+            _dtbase = new DataTable();
+            foreach (var nameOfColumn in Components.UserTag.Values)
+            {
+                _dtbase.Columns.Add(nameOfColumn);
+            }
             foreach (var file in files)
                 Analyze(file);
         }
@@ -164,41 +169,38 @@ namespace PhotosAnalytic
 
         void ComputeToHumanReadableFormat(List<Entry> entries)
         {
-            _dtbase = new DataTable();
-            _dtbase.Columns.Add("tag");
-            _dtbase.Columns.Add("value");
+            var newRow = _dtbase.NewRow();
             foreach (var entry in entries)
             {
                 try
                 {
-                    var newRow = _dtbase.NewRow();
-                    newRow["tag"] = Components.UserTag[entry.Tag];
+                    var entryTag = Components.UserTag[entry.Tag];
                     switch ((Components.Format)entry.Format)
                     {
                         case Components.Format.unsignedByte:
                         case Components.Format.unsignedShort:
                         case Components.Format.unsignedLong:
-                            newRow["value"] = entry.Value.ToString();
+                            newRow[entryTag] = entry.Value.ToString();
                             break;
 
                         case Components.Format.signedByte:
                         case Components.Format.signedShort:
                         case Components.Format.signedLong:
-                            newRow["value"] = ((int)entry.Value).ToString();
+                            newRow[entryTag] = ((int)entry.Value).ToString();
                             break;
 
                         case Components.Format.singleFloat:
-                            newRow["value"] = BitConverter.ToSingle(BitConverter.GetBytes(entry.Value), 0).ToString();
+                            newRow[entryTag] = BitConverter.ToSingle(BitConverter.GetBytes(entry.Value), 0).ToString();
                             break;
 
                         case Components.Format.doubleFloat:
                         case Components.Format.signedRational:
                         case Components.Format.unsignedRational:
-                            newRow["value"] = entry.dValue.ToString();
+                            newRow[entryTag] = entry.dValue.ToString();
                             break;
 
                         case Components.Format.asciiString:
-                            newRow["value"] = entry.sValue;
+                            newRow[entryTag] = entry.sValue;
                             break;
 
                         default:
